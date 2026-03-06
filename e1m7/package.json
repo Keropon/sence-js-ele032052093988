@@ -1,0 +1,12 @@
+{
+  "name": "e1m7",
+  "version": "1.0.0",
+  "description": "E1-M7: Configuración de la conexión a PostgreSQL con Pool",
+  "main": "db-connect.js",
+  "scripts": {
+    "start": "node db-connect.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
