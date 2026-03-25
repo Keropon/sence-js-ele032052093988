@@ -1,0 +1,12 @@
+{
+  "name": "e3m7",
+  "version": "1.0.0",
+  "description": "E3-M7: Gestor de Tareas CRUD con SQL directo",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
