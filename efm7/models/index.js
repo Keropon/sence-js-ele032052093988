@@ -1,17 +1,17 @@
-import sequelize from '../database.js';
-import Usuario from './Usuario.js';
-import Tablero from './Tablero.js';
-import Lista from './Lista.js';
-import Tarjeta from './Tarjeta.js';
+import Usuario from './Usuario.js'
+import Tablero from './Tablero.js'
+import Lista from './Lista.js'
+import Tarjeta from './Tarjeta.js'
 
-// Relaciones
-Usuario.hasMany(Tablero);
-Tablero.belongsTo(Usuario);
+/* relaciones */
 
-Tablero.hasMany(Lista);
-Lista.belongsTo(Tablero);
+Usuario.hasMany(Tablero, { foreignKey: 'usuarioId' })
+Tablero.belongsTo(Usuario, { foreignKey: 'usuarioId' })
 
-Lista.hasMany(Tarjeta);
-Tarjeta.belongsTo(Lista);
+Tablero.hasMany(Lista, { foreignKey: 'tableroId' })
+Lista.belongsTo(Tablero, { foreignKey: 'tableroId' })
 
-export { sequelize, Usuario, Tablero, Lista, Tarjeta };
+Lista.hasMany(Tarjeta, { foreignKey: 'listaId' })
+Tarjeta.belongsTo(Lista, { foreignKey: 'listaId' })
+
+export { Usuario, Tablero, Lista, Tarjeta }

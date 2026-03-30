@@ -1,45 +1,136 @@
-import 'dotenv/config';
-import { sequelize, Usuario, Tablero, Lista, Tarjeta } from './models/index.js';
+import sequelize from './config/sequelize.js'
+import { Usuario, Tablero, Lista, Tarjeta } from './models/index.js'
 
-async function seed() {
-    try {
-        await sequelize.sync({ force: true });
-        console.log('Tablas creadas (force: true — datos previos eliminados).');
+async function main() {
+  try {
 
-        // Usuarios
-        const ana = await Usuario.create({ nombre: 'Ana García', email: 'ana@kanbanpro.com' });
-        const luis = await Usuario.create({ nombre: 'Luis Fernández', email: 'luis@kanbanpro.com' });
-        console.log('Usuarios creados:', ana.nombre, '|', luis.nombre);
+    /* =========================
+       CONEXIÓN A BASE DE DATOS
+    ========================== */
+    console.log("🔌 Conectando a la base de datos...")
+    await sequelize.authenticate()
+    console.log("✅ Conexión exitosa")
 
-        // Tableros
-        const tableroAna1 = await Tablero.create({ nombre: 'Proyecto Web', descripcion: 'Desarrollo del sitio corporativo', UsuarioId: ana.id });
-        const tableroAna2 = await Tablero.create({ nombre: 'Marketing Q1', descripcion: 'Campañas del primer trimestre', UsuarioId: ana.id });
-        const tableroLuis = await Tablero.create({ nombre: 'Backend API', descripcion: 'Endpoints REST del sistema', UsuarioId: luis.id });
-        console.log('Tableros creados: 3');
+    /* =========================
+       CREACIÓN DE TABLAS
+    ========================== */
+    console.log("🧱 Creando tablas...")
+    await sequelize.sync({ force: true })
+    console.log("✅ Tablas creadas correctamente")
 
-        // Listas
-        const porHacer = await Lista.create({ nombre: 'Por Hacer', posicion: 1, TableroId: tableroAna1.id });
-        const enProgreso = await Lista.create({ nombre: 'En Progreso', posicion: 2, TableroId: tableroAna1.id });
-        const terminado = await Lista.create({ nombre: 'Terminado', posicion: 3, TableroId: tableroAna1.id });
-        const backlog = await Lista.create({ nombre: 'Backlog', posicion: 1, TableroId: tableroLuis.id });
-        const enRevision = await Lista.create({ nombre: 'En Revisión', posicion: 2, TableroId: tableroLuis.id });
-        console.log('Listas creadas: 5');
 
-        // Tarjetas
-        await Tarjeta.create({ titulo: 'Diseñar homepage', descripcion: 'Crear mockup en Figma', ListaId: porHacer.id });
-        await Tarjeta.create({ titulo: 'Configurar dominio', descripcion: 'DNS y SSL', ListaId: porHacer.id });
-        await Tarjeta.create({ titulo: 'Integrar formulario', descripcion: 'Formulario de contacto', ListaId: enProgreso.id });
-        await Tarjeta.create({ titulo: 'Subir prototipo', descripcion: 'Deploy en Vercel', ListaId: terminado.id, completada: true });
-        await Tarjeta.create({ titulo: 'Endpoint /usuarios', descripcion: 'GET, POST, PUT, DELETE', ListaId: backlog.id });
-        await Tarjeta.create({ titulo: 'Autenticación JWT', descripcion: 'Login con tokens', ListaId: enRevision.id });
-        console.log('Tarjetas creadas: 6');
+    /* =========================
+       CREAR USUARIOS
+    ========================== */
+    console.log("👤 Creando usuarios...")
 
-        console.log('\nSeed completado con éxito.');
-    } catch (err) {
-        console.error('Error durante el seed:', err.message);
-    } finally {
-        await sequelize.close();
-    }
+    const usuario1 = await Usuario.create({
+      nombre: "Ana",
+      email: "ana@email.com"
+    })
+
+    const usuario2 = await Usuario.create({
+      nombre: "Luis",
+      email: "luis@email.com"
+    })
+
+    console.table([
+      usuario1.toJSON(),
+      usuario2.toJSON()
+    ])
+
+
+    /* =========================
+       CREAR TABLEROS
+    ========================== */
+    console.log("📋 Creando tableros...")
+
+    const tablero1 = await usuario1.createTablero({
+      nombre: "Proyecto Web",
+      descripcion: "Desarrollo sitio web"
+    })
+
+    const tablero2 = await usuario1.createTablero({
+      nombre: "Proyecto Backend",
+      descripcion: "API Node"
+    })
+
+    const tablero3 = await usuario2.createTablero({
+      nombre: "Tareas Personales",
+      descripcion: "Organización personal"
+    })
+
+    console.table([
+      tablero1.toJSON(),
+      tablero2.toJSON(),
+      tablero3.toJSON()
+    ])
+
+
+    /* =========================
+       CREAR LISTAS
+    ========================== */
+    console.log("📑 Creando listas...")
+
+    const lista1 = await tablero1.createLista({
+      nombre: "Pendiente"
+    })
+
+    const lista2 = await tablero1.createLista({
+      nombre: "En progreso"
+    })
+
+    const lista3 = await tablero2.createLista({
+      nombre: "Terminado"
+    })
+
+    console.table([
+      lista1.toJSON(),
+      lista2.toJSON(),
+      lista3.toJSON()
+    ])
+
+
+    /* =========================
+       CREAR TARJETAS
+    ========================== */
+    console.log("🃏 Creando tarjetas...")
+
+    const tarjeta1 = await lista1.createTarjeta({
+      titulo: "Diseñar UI",
+      descripcion: "Crear diseño inicial",
+      estado: "Pendiente"
+    })
+
+    const tarjeta2 = await lista2.createTarjeta({
+      titulo: "Crear API",
+      descripcion: "Endpoints con Express",
+      estado: "En progreso"
+    })
+
+    const tarjeta3 = await lista1.createTarjeta({
+      titulo: "Subir proyecto",
+      descripcion: "Deploy en servidor",
+      estado: "Pendiente"
+    })
+
+    console.table([
+      tarjeta1.toJSON(),
+      tarjeta2.toJSON(),
+      tarjeta3.toJSON()
+    ])
+
+
+    /* =========================
+       FINALIZACIÓN
+    ========================== */
+    console.log("🌱 Base de datos creada y poblada correctamente")
+
+    await sequelize.close()
+
+  } catch (error) {
+    console.error("❌ Error:", error)
+  }
 }
 
-seed();
+main()
