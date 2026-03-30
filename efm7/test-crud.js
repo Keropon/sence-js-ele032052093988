@@ -1,67 +1,88 @@
-// EF-M7: Script de verificación CRUD — sin Express, solo lógica de base de datos
-// Prerequisito: ejecutar primero `node seed.js`
-// Uso: node test-crud.js
-
-import sequelize from './database.js';
-import Usuario  from './models/Usuario.js';
-import Tablero  from './models/Tablero.js';
-import Lista    from './models/Lista.js';
-import Tarjeta  from './models/Tarjeta.js';
-
-// Registrar relaciones
-Usuario.hasMany(Tablero);
-Tablero.belongsTo(Usuario);
-
-Tablero.hasMany(Lista);
-Lista.belongsTo(Tablero);
-
-Lista.hasMany(Tarjeta);
-Tarjeta.belongsTo(Lista);
+import 'dotenv/config';
+import { sequelize, Usuario, Tablero, Lista, Tarjeta } from './models/index.js';
 
 async function testCrud() {
     try {
+        console.log('\n🔌 CONECTANDO A LA BASE DE DATOS');
         await sequelize.authenticate();
-        console.log('Conexión verificada.\n');
+        console.log('Conexión exitosa');
 
-        // --- CREAR ---
-        // Obtener la primera Lista existente para asociar la tarjeta
+        console.log('\nCREAR TARJETA');
+
         const primeraLista = await Lista.findOne();
-        if (!primeraLista) throw new Error('No hay listas en la base de datos. Ejecuta seed.js primero.');
+        if (!primeraLista) throw new Error('No hay listas. Ejecuta seed.js primero.');
 
         const nuevaTarjeta = await Tarjeta.create({
             titulo:      'Tarjeta de prueba CRUD',
             descripcion: 'Creada por test-crud.js',
             ListaId:     primeraLista.id,
         });
-        console.log(`[CREATE] Tarjeta creada: "${nuevaTarjeta.titulo}" (ID: ${nuevaTarjeta.id})`);
 
-        // --- LEER ---
-        // Obtener el primer Tablero incluyendo sus Listas y Tarjetas (Eager Loading)
+        console.table([nuevaTarjeta.toJSON()]);
+
+        console.log('\nLEER TABLERO CON LISTAS Y TARJETAS');
+
         const tablero = await Tablero.findOne({
             include: {
                 model:   Lista,
                 include: Tarjeta,
             },
         });
-        console.log(`\n[READ] Tablero: "${tablero.nombre}"`);
-        tablero.Listas.forEach(lista => {
-            console.log(`  Lista: "${lista.nombre}"`);
-            lista.Tarjetas.forEach(t =>
-                console.log(`    Tarjeta [${t.completada ? 'x' : ' '}]: ${t.titulo}`)
-            );
-        });
 
-        // --- ACTUALIZAR ---
-        await nuevaTarjeta.update({ titulo: 'Tarjeta CRUD — título actualizado' });
-        console.log(`\n[UPDATE] Tarjeta ${nuevaTarjeta.id} renombrada a: "${nuevaTarjeta.titulo}"`);
+        console.log('\nTABLERO');
+        console.table([{ id: tablero.id, nombre: tablero.nombre, descripcion: tablero.descripcion }]);
 
-        // --- BORRAR ---
+        console.log('\nLISTAS');
+        console.table(tablero.Listas.map(l => ({ id: l.id, nombre: l.nombre, TableroId: l.TableroId })));
+
+        console.log('\nTARJETAS');
+        console.table(
+            tablero.Listas.flatMap(l =>
+                l.Tarjetas.map(t => ({ id: t.id, titulo: t.titulo, completada: t.completada, ListaId: t.ListaId }))
+            )
+        );
+
+        console.log('\nLEER USUARIO CON SUS TABLEROS');
+
+        const usuario = await Usuario.findOne({ include: Tablero });
+
+        console.table([{ id: usuario.id, nombre: usuario.nombre, email: usuario.email }]);
+        console.table(usuario.Tableros.map(t => ({ id: t.id, nombre: t.nombre, UsuarioId: t.UsuarioId })));
+
+        console.log('\nFILTRAR TARJETAS COMPLETADAS (completada: true)');
+
+        const tarjetasCompletadas = await Tarjeta.findAll({ where: { completada: true } });
+
+        console.table(tarjetasCompletadas.map(t => ({ id: t.id, titulo: t.titulo, completada: t.completada })));
+
+        console.log('\nACTUALIZAR TARJETA (findByPk)');
+
+        const tarjeta = await Tarjeta.findByPk(1);
+        if (!tarjeta) throw new Error('No existe la tarjeta con ID 1. Verifica que el seed se haya ejecutado.');
+
+        const estadoAntes = { id: tarjeta.id, titulo: tarjeta.titulo, completada: tarjeta.completada };
+
+        await tarjeta.update({ titulo: 'Diseñar homepage — revisado', completada: true });
+
+        const estadoDespues = { id: tarjeta.id, titulo: tarjeta.titulo, completada: tarjeta.completada };
+
+        console.log('Antes:');
+        console.table([estadoAntes]);
+        console.log('Después:');
+        console.table([estadoDespues]);
+
+        console.log('\nBORRAR TARJETA');
+
+        const datosEliminados = nuevaTarjeta.toJSON();
         await nuevaTarjeta.destroy();
-        console.log(`[DELETE] Tarjeta ${nuevaTarjeta.id} eliminada.`);
 
-        console.log('\nTodas las operaciones CRUD completadas con éxito.');
+        console.log('Tarjeta eliminada:');
+        console.table([datosEliminados]);
+
+        console.log('\nPRUEBAS CRUD FINALIZADAS');
+
     } catch (err) {
-        console.error('Error en test-crud:', err.message);
+        console.error('\nError en test-crud:', err.message);
     } finally {
         await sequelize.close();
     }
